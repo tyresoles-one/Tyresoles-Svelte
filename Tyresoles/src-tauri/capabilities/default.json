@@ -1,0 +1,28 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": [
+    "main"
+  ],
+  "remote": {
+    "urls": [
+      "https://app.tyresoles.in"
+    ]
+  },
+  "permissions": [
+    "core:default",
+    "opener:default",    
+    {
+      "identifier":"shell:allow-execute",
+      "allow": [
+        {
+          "name": "run_nav",
+          "cmd": "C:\\Program Files (x86)\\Microsoft Dynamics NAV\\71\\RoleTailored Client\\Microsoft.Dynamics.Nav.Client.exe",
+          "args": true
+        }
+      ]
+    },
+    "shell:default"
+  ]
+}

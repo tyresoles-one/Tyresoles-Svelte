@@ -1,0 +1,116 @@
+import { prepareEndpoints } from './endpointManager';
+import { BACKEND_SERVER_IP } from '$lib/system';
+
+const EndPoint = {
+	auth: {
+		login: '',
+		logout: ''
+	},
+	user: {
+		changePassword: '',
+		changeAvatar: '',
+		getNotificationToken: '',
+		updateNotificationToken: '',
+		changeHomePath: ''
+	},
+	accounts: {
+		states: '',
+		accountBalance: '',
+		gstinVerify: '',
+		gstinSync: '',
+		gstinSave: '',
+		irnVerify: '',
+		runEInvProcess: '',
+		runEWBProcess: '',
+		getEwbByInv: '',
+		reportNames: '',
+		reportMeta: '',
+		accountsReport: ''
+	},
+	sales: {
+		reportNames: '',
+		reportMeta: '',
+		salesReport: '',
+		custVendNameByCode: '',
+		CustomerAccountForDealer: '',
+		vehicles: '',
+		updateVehicle: '',
+		myAreas: '',
+		myDealers: '',
+		myRegions: '',
+		myCustomers: '',
+		postedSalesDocuments: '',
+		salesDashboard: '',
+		getDealerRecord: '',
+		updateDealerRecord: '',
+		tilesForDealer: '',
+		updateDocumentImage: '',
+		updateDocumentImages: '',
+		getDocumentImages: '',
+		getCurrentDatePeriodByUserID: ''
+	},
+	payroll: {
+		reportNames: '',
+		reportMeta: '',
+		payrollReport: '',
+		employeeCodeNames: '',
+		departmentCodeNames: ''
+	},
+	merger: {
+		oldCompanies: '',
+		oldRespCenters: '',
+		getMapper: '',
+		prepareEntity: '',
+		getOldInvLines: '',
+		createClaimOnOldInv: ''
+	},
+	production: {
+		reportNames: '',
+		reportMeta: '',
+		productionReport: '',
+		itemNos: '',
+		makes: '',
+		procTiles: '',
+		procOrders: '',
+		procMarkets: '',
+		procInspection: '',
+		newProcOrder: '',
+		newProcShipNo: '',
+		generateGRAs: '',
+		vendors: '',
+		createVendor: '',
+		updateVendor: '',
+		updateProcOrd: '',
+		updateProcOrdLinesDispatch: '',
+		updateProcOrdLinesReceipt: '',
+		updateProcOrdLinesRemove: '',
+		updateProcOrdLinesDrop: '',
+		procOrderLines: '',
+		procOrderLinesDispatch: '',
+		inspectorCodeNames: '',
+		updateProcOrdLine: '',
+		deleteProcOrdLine: '',
+		deleteProcOrder: '',
+		insertCasingItems: '',
+		procShipmentsForMerger: '',
+		procurementDispatchOrders: '',
+		updateProcOrdLinesDispatch2: '',
+		ecomileLastNewNumber: '',
+		procOrderLinesNewNumbering: ''
+	}
+};
+
+export const endpoints = prepareEndpoints(EndPoint) as typeof EndPoint;
+
+export const IMAGES = [
+	{ name: 'man', url: `${BACKEND_SERVER_IP}/images/man.png` },
+	{ name: 'man-1', url: `${BACKEND_SERVER_IP}/images/man_1.png` },
+	{ name: 'man-2', url: `${BACKEND_SERVER_IP}/images/man_2.png` },
+	{ name: 'man-3', url: `${BACKEND_SERVER_IP}/images/man_3.png` },
+	{ name: 'man-4', url: `${BACKEND_SERVER_IP}/images/man_4.png` },
+	{ name: 'woman', url: `${BACKEND_SERVER_IP}/images/woman.png` },
+	{ name: 'woman-1', url: `${BACKEND_SERVER_IP}/images/woman_1.png` },
+	{ name: 'woman-2', url: `${BACKEND_SERVER_IP}/images/woman_2.png` },
+	{ name: 'login-cover', url: `${BACKEND_SERVER_IP}/images/login-cover.png` },
+	{ name: 'birthday', url: `${BACKEND_SERVER_IP}/images/birthday.jpg` }
+];

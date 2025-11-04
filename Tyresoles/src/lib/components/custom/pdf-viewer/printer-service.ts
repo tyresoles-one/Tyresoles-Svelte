@@ -1,5 +1,5 @@
 export class PdfPrintService {
-  constructor() { }
+  constructor() {}
 
   /**
    * Prints the PDF using PDFDocumentProxy by rendering pages to canvas
@@ -32,13 +32,13 @@ export class PdfPrintService {
    * @returns The created iframe element.
    */
   private createPrintIframe(): HTMLIFrameElement {
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
     document.body.appendChild(iframe); // Add the iframe to the document
     return iframe;
   }
@@ -49,7 +49,7 @@ export class PdfPrintService {
    * @param iframe - The iframe that contains the rendered PDF canvases.
    */
   private addPrintStyles(iframe: HTMLIFrameElement): void {
-    const style = iframe.contentDocument?.createElement('style');
+    const style = iframe.contentDocument?.createElement("style");
     style!.textContent = `
       @media print {
         @page {
@@ -92,8 +92,8 @@ export class PdfPrintService {
   private renderPageToCanvas(page: any): Promise<HTMLCanvasElement> {
     return new Promise((resolve) => {
       const viewport = page.getViewport({ scale: 1.5 }); // Adjust scale as needed
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d') as CanvasRenderingContext2D;
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d") as CanvasRenderingContext2D;
 
       canvas.width = viewport.width;
       canvas.height = viewport.height;

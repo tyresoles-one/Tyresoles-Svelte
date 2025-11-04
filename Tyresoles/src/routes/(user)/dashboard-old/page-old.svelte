@@ -2,7 +2,6 @@
 	import * as Accordion from '$lib/components/ui/accordion';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Popover from '$lib/components/ui/popover';
-	import { Toggle } from '$lib/components/ui/toggle';
 	import { Icon, Input, Button, ProgressBar, toast, DialogPage, Grid } from '$lib/components';
 	import { fetchParamsStore, loadingStore, dashboardDataStore } from '$lib/managers/stores';
 	import { endpoints, apiFetch } from '$lib/managers/network';
@@ -11,47 +10,35 @@
 		DashboardData,
 		Sales,
 		CustomerSales,
-		CollectionData,
-		ProductSale
+		CollectionData
 	} from '$lib/business/models';
-	import { onMount } from 'svelte';
-	import { prepareBusinessLocations, prepareData, type BusinessLocation } from './logic';
+	import { filterRespCenters, SalesRespCenters } from '$lib/business';
 
-	let activeTab = $state<string>('view');
-	const views = ['Product Sale', 'Collection', 'Active Customers', 'Salesperson', 'Dealer'];
-	const viewValues = ['ProductSale', 'Collection', 'ActiveCustomer', 'SalesmanSale', 'DealerSale'];
-
-	let activeView = $state<string>(
-		$dashboardDataStore?.name ? views[viewValues.indexOf($dashboardDataStore.name)] : views[0]
-	);
+	let activeTab = $state<string>('filter');
+	const views = ['Product Sale', 'Active Customers', 'Salesperson', 'Dealer', 'Collection'];
+	let dbrdData = $state<DashboardData>();
+	let activeView = $state<string>(views[0]);
 	let fetchParams = $state<FetchParams>({
 		...$fetchParamsStore,
-		reportName: views[0]
+		reportName: views[0],
+		respCenters:
+			$fetchParamsStore?.respCenters && $fetchParamsStore.respCenters.length > 1
+				? [$fetchParamsStore?.respCenters[0]]
+				: []
 	} as FetchParams);
-
+	let open = $state<boolean>(false);
 	let records = $state<Array<object>>([]);
-	let locations = $state<Array<BusinessLocation>>(
-		prepareBusinessLocations($dashboardDataStore as DashboardData)
-	);
-	let dbrdData = $state<DashboardData>(
-		prepareData($dashboardDataStore as DashboardData, locations)
-	);
-
 	const filterLabel = $derived.by(() => {
 		let txt = '';
 		if (fetchParams.from) {
-			txt += `For Period (${fetchParams.from}..${fetchParams.to})`;
+			txt += `For Period (${fetchParams.from}..${fetchParams.to}),`;
+		}
+		if (fetchParams.respCenters && fetchParams.respCenters.length > 0) {
+			txt += ` Locations: (${fetchParams.respCenters.map((rc) => rc).join(', ')})`;
 		}
 		return txt;
 	});
 
-	onMount(() => {
-		//onSubmit();
-	});
-
-	$effect(() => {
-		dbrdData = prepareData($dashboardDataStore as DashboardData, locations);
-	});
 	const onSubmit = () => {
 		if (!fetchParams.from || !fetchParams.to) {
 			toast.error('Please select From and To date');
@@ -66,16 +53,12 @@
 			body: { ...fetchParams, reportName: activeView } as FetchParams
 		}).then((res) => {
 			if (res.success) {
-				dashboardDataStore.set(res.data as DashboardData);
-				locations = prepareBusinessLocations(res.data as DashboardData);
-				dbrdData = prepareData(res.data as DashboardData, locations);
+				dbrdData = res.data as DashboardData;
 				activeTab = 'view';
 			}
 		});
 	};
-
 	$inspect(dbrdData, 'dbrdData');
-	$inspect(locations, 'locations');
 </script>
 
 <div>
@@ -87,7 +70,6 @@
 		class="w-full px-2"
 		onValueChange={(value: string) => (activeTab = value)}
 		bind:value={activeTab}
-		collapsible
 	>
 		<Accordion.Item value="filter">
 			<Accordion.Trigger class="py-2 text-[15px] leading-6 hover:no-underline">
@@ -103,6 +85,20 @@
 			</Accordion.Trigger>
 			<Accordion.Content>
 				<div class="flex flex-col gap-2 p-2 lg:md:flex-row lg:md:gap-3">
+					<Input
+						label="Location"
+						bind:value={fetchParams.respCenters}
+						type="list"
+						disabled={$loadingStore}
+						columns={[{ name: 'name', label: 'Response Center' }]}
+						hideHeader={true}
+						dataKey="code"
+						labelKey="name"
+						valueKey="code"
+						selectionType="multiple"
+						output="array"
+						data={filterRespCenters($fetchParamsStore?.respCenters || [], 'sales')}
+					/>
 					<Input
 						label="From"
 						type="date"
@@ -170,7 +166,7 @@
 									</Tabs.List>
 									{#each dbrdData.data as salesmanData}
 										<Tabs.Content value={salesmanData.product} class="mt-2">
-											{#if !salesmanData.data || salesmanData.data.length === 0}
+											{#if salesmanData.data.length === 0}
 												<div class="text-center italic text-gray-600">No data found</div>
 											{:else}
 												<Grid data={salesmanData.data} />
@@ -195,7 +191,7 @@
 									</Tabs.List>
 									{#each dbrdData.data as salesmanData}
 										<Tabs.Content value={salesmanData.product} class="mt-2">
-											{#if !salesmanData.data || salesmanData.data.length === 0}
+											{#if salesmanData.data.length === 0}
 												<div class="text-center italic text-gray-600">No data found</div>
 											{:else}
 												<Grid data={salesmanData.data} />
@@ -218,67 +214,22 @@
 {#snippet productSale(source: DashboardData | undefined)}
 	{#if source && source?.name === 'ProductSale'}
 		<div>
-			{#each locations as location}
-				{@const prodSales = dbrdData?.data.filter(
-					(d) => d.business === location.business && d.location === location.default
-				) as ProductSale[]}
-				<div class="mb-4 w-full rounded-lg border border-gray-300 bg-slate-600 p-2">
+			{#each source.data as prodSale}
+				<div class="mb-4 w-full rounded border border-gray-300 bg-gray-100 p-2">
 					<div
-						class="flex justify-between rounded border-b border-gray-500 p-1 font-bold uppercase tracking-wide text-gray-900"
+						class="rounded border border-gray-400 bg-gray-200 p-1 text-center font-bold uppercase tracking-wide text-gray-700"
 					>
-						<div class="text-lg font-bold text-slate-900 text-white">{location.business}</div>
-						<div class="flex gap-2">
-							{#each location.locations as loc}
-								<Toggle
-									variant="outline"
-									class="text-white"
-									pressed={location.selections.includes(loc)}
-									onPressedChange={(pressed) => {
-										if (pressed) {
-											location.selections.push(loc);
-										} else {
-											location.selections = location.selections.filter((s) => s !== loc);
-										}
-									}}
-								>
-									{loc}
-								</Toggle>
+						{prodSale.product}
+					</div>
+					<div class="w-full">
+						<div class="mt-2 flex gap-2 overflow-x-auto">
+							{#each prodSale.data as sale}
+								{@render saleCard(sale, prodSale.product === 'Grand Total')}
 							{/each}
 						</div>
 					</div>
-
-					{#each prodSales as prodSale}
-						<div class="w-full rounded border border-gray-300 bg-gray-100 p-2">
-							<div
-								class="rounded border border-gray-400 bg-gray-200 p-1 text-center font-bold uppercase tracking-wide text-gray-700"
-							>
-								{prodSale.product}
-							</div>
-							<div class="w-full">
-								<div class="mt-2 flex gap-2 overflow-x-auto">
-									{#each prodSale.data as sale}
-										{@render saleCard(sale, prodSale.product === 'Grand Total')}
-									{/each}
-								</div>
-							</div>
-						</div>
-					{/each}
 				</div>
 			{/each}
-			<!-- <div>
-            {#each source.data as prodSale}
-                <div class="p-2 border border-gray-300 bg-gray-100 rounded mb-4 w-full">
-                    <div class="text-center border border-gray-400 text-gray-700 bg-gray-200 font-bold p-1 rounded tracking-wide uppercase">{prodSale.product}</div>
-                    <div class="w-full">
-                        <div class="flex gap-2 overflow-x-auto mt-2">
-                        {#each prodSale.data as sale}
-                            {@render saleCard(sale, prodSale.product === 'Grand Total') }
-                        {/each}
-                    </div>
-                    </div>                
-                </div>            
-            {/each}
-        </div> -->
 		</div>
 	{/if}
 {/snippet}
@@ -323,51 +274,20 @@
 {#snippet activeCustomer(source: DashboardData | undefined)}
 	{#if source && source?.name === 'ActiveCustomer'}
 		<div>
-			{#each locations as location}
-				{@const prodSales = dbrdData?.data.filter(
-					(d) => d.business === location.business && d.location === location.default
-				) as ProductSale[]}
-				<div class="mb-4 w-full rounded-lg border border-gray-300 bg-slate-600 p-2">
+			{#each source.data as prodSale}
+				<div class="mb-4 w-full rounded border border-gray-300 bg-gray-100 p-2">
 					<div
-						class="flex justify-between rounded border-b border-gray-500 p-1 font-bold uppercase tracking-wide text-gray-900"
+						class="rounded border border-gray-400 bg-gray-200 p-1 text-center font-bold uppercase tracking-wide text-gray-700"
 					>
-						<div class="text-lg font-bold text-slate-900 text-white">{location.business}</div>
-						<div class="flex gap-2">
-							{#each location.locations as loc}
-								<Toggle
-									variant="outline"
-									class="text-white"
-									pressed={location.selections.includes(loc)}
-									onPressedChange={(pressed) => {
-										if (pressed) {
-											location.selections.push(loc);
-										} else {
-											location.selections = location.selections.filter((s) => s !== loc);
-										}
-									}}
-								>
-									{loc}
-								</Toggle>
+						{prodSale.product}
+					</div>
+					<div class="w-full">
+						<div class="mt-2 flex gap-2 overflow-x-auto">
+							{#each prodSale.data as sale}
+								{@render customerSaleCard(sale)}
 							{/each}
 						</div>
 					</div>
-
-					{#each prodSales as prodSale}
-						<div class="w-full rounded border border-gray-300 bg-gray-100 p-2">
-							<div
-								class="rounded border border-gray-400 bg-gray-200 p-1 text-center font-bold uppercase tracking-wide text-gray-700"
-							>
-								{prodSale.product}
-							</div>
-							<div class="w-full">
-								<div class="mt-2 flex gap-2 overflow-x-auto">
-									{#each prodSale.data as sale}
-										{@render customerSaleCard(sale)}
-									{/each}
-								</div>
-							</div>
-						</div>
-					{/each}
 				</div>
 			{/each}
 		</div>
@@ -411,8 +331,7 @@
 				>
 					<div class="mr-4 flex w-full justify-between">
 						<span>{line.description}</span>
-						<span class="text-left text-gray-700">{line.amount ? line.amount.toFixed(2) : '-'}</span
-						>
+						<span class="text-left text-gray-700">{line.amount}</span>
 					</div>
 					<span>{line.unit}</span>
 				</div>
@@ -423,61 +342,25 @@
 
 {#snippet collections(source: DashboardData | undefined)}
 	{#if source && source?.name === 'Collection'}
-		<div>
-			{#each locations as location}
-				{@const collections = dbrdData?.data.filter(
-					(d) => d.business === location.business && d.location === location.default
-				) as CollectionData[]}
-				<div class="mb-4 w-full rounded-lg border border-gray-300 bg-slate-600 p-2">
-					<div
-						class="flex justify-between rounded border-b border-gray-500 p-1 font-bold uppercase tracking-wide text-gray-900"
-					>
-						<div class="text-lg font-bold text-slate-900 text-white">{location.business}</div>
-						<div class="flex gap-2">
-							{#each location.locations as loc}
-								<Toggle
-									variant="outline"
-									class="text-white"
-									pressed={location.selections.includes(loc)}
-									onPressedChange={(pressed) => {
-										if (pressed) {
-											location.selections.push(loc);
-										} else {
-											location.selections = location.selections.filter((s) => s !== loc);
-										}
-									}}
-								>
-									{loc}
-								</Toggle>
-							{/each}
-						</div>
-					</div>
-					<div class="flex gap-2">
-						{#each collections as collection}
-							<div
-								class="flex w-full flex-col justify-center gap-1 rounded bg-white p-1 py-4 shadow-xl"
-							>
-								<div class="text-center text-gray-700">{collection.period}</div>
+		<div class="mt-2 flex gap-2 overflow-x-auto p-4">
+			{#each source.data as collection}
+				<div class="flex w-full flex-col justify-center gap-1 rounded bg-white p-1 py-4 shadow-xl">
+					<div class="text-center text-lg text-slate-700">Collection</div>
+					<div class="text-center text-gray-700">{collection.period}</div>
 
-								<Popover.Root>
-									<Popover.Trigger
-										class="top-0 text-lg font-bold text-blue-700"
-										onclick={() => {
-											records = collection.data;
-										}}
-										>{collection.collection === 0
-											? '-'
-											: collection.collection.toLocaleString()}</Popover.Trigger
-									>
-									<Popover.Content
-										class="max-h-[80vh] w-[90vw] overflow-auto p-4 md:w-[70vw] lg:w-[60vw]"
-									>
-										<Grid data={records} footer />
-									</Popover.Content>
-								</Popover.Root>
-							</div>
-						{/each}
-					</div>
+					<Popover.Root>
+						<Popover.Trigger
+							class="top-0 text-lg font-bold text-blue-700"
+							onclick={() => {
+								records = collection.data;
+							}}>{collection.collection}</Popover.Trigger
+						>
+						<Popover.Content
+							class="max-h-[80vh] w-[90vw] overflow-auto p-4 md:w-[70vw] lg:w-[60vw]"
+						>
+							<Grid data={records} footer />
+						</Popover.Content>
+					</Popover.Root>
 				</div>
 			{/each}
 		</div>

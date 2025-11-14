@@ -25,6 +25,7 @@
     CustomerSales,
     CollectionData,
     ProductSale,
+    SalesmanSale,
   } from "$lib/business/models";
   import { onMount } from "svelte";
   import {
@@ -61,7 +62,7 @@
 
   let records = $state<Array<object>>([]);
   let locations = $state<Array<BusinessLocation>>(
-    prepareBusinessLocations($dashboardDataStore as DashboardData)
+    prepareBusinessLocations($dashboardDataStore as DashboardData, activeView)
   );
   let dbrdData = $state<DashboardData>(
     prepareData($dashboardDataStore as DashboardData, locations)
@@ -96,29 +97,24 @@
       body: { ...fetchParams, reportName: activeView } as FetchParams,
     }).then((res) => {
       if (res.success) {
+        console.log(res.data, "data");
         dashboardDataStore.set(res.data as DashboardData);
-        locations = prepareBusinessLocations(res.data as DashboardData);
+        locations = prepareBusinessLocations(
+          res.data as DashboardData,
+          activeView
+        );
         dbrdData = prepareData(res.data as DashboardData, locations);
         activeTab = "view";
       }
     });
   };
-
-  $inspect(dbrdData, "dbrdData");
-  $inspect(locations, "locations");
 </script>
 
 <div>
   {#if $loadingStore}
     <ProgressBar />
   {/if}
-  <Accordion.Root
-    type="single"
-    class="w-full px-2"
-    onValueChange={(value: string) => (activeTab = value)}
-    bind:value={activeTab}
-    collapsible
-  >
+  <Accordion.Root type="single" class="w-full px-2" bind:value={activeTab}>
     <Accordion.Item value="filter">
       <Accordion.Trigger class="py-2 text-[15px] leading-6 hover:no-underline">
         <span class="flex items-center gap-3">
@@ -180,7 +176,7 @@
               onSubmit();
             }}
           >
-            <Tabs.List>
+            <Tabs.List class="bg-gray-300">
               {#each views as view}
                 <Tabs.Trigger value={view}>{view}</Tabs.Trigger>
               {/each}
@@ -192,62 +188,10 @@
               {@render activeCustomer(dbrdData)}
             </Tabs.Content>
             <Tabs.Content value="Salesperson" class="mt-2">
-              {#if dbrdData && dbrdData.name === "SalesmanSale"}
-                <Tabs.Root
-                  value={dbrdData.data && dbrdData.data.length > 0
-                    ? dbrdData.data[0].product
-                    : ""}
-                  class="w-full"
-                >
-                  <Tabs.List>
-                    {#each dbrdData.data as salesmanData}
-                      <Tabs.Trigger value={salesmanData.product}
-                        >{salesmanData.product}</Tabs.Trigger
-                      >
-                    {/each}
-                  </Tabs.List>
-                  {#each dbrdData.data as salesmanData}
-                    <Tabs.Content value={salesmanData.product} class="mt-2">
-                      {#if !salesmanData.data || salesmanData.data.length === 0}
-                        <div class="text-center italic text-gray-600">
-                          No data found
-                        </div>
-                      {:else}
-                        <Grid data={salesmanData.data} />
-                      {/if}
-                    </Tabs.Content>
-                  {/each}
-                </Tabs.Root>
-              {/if}
+              {@render salesmanSales(dbrdData)}
             </Tabs.Content>
             <Tabs.Content value="Dealer" class="mt-2">
-              {#if dbrdData && dbrdData.name === "DealerSale"}
-                <Tabs.Root
-                  value={dbrdData.data && dbrdData.data.length > 0
-                    ? dbrdData.data[0].product
-                    : ""}
-                  class="w-full"
-                >
-                  <Tabs.List>
-                    {#each dbrdData.data as salesmanData}
-                      <Tabs.Trigger value={salesmanData.product}
-                        >{salesmanData.product}</Tabs.Trigger
-                      >
-                    {/each}
-                  </Tabs.List>
-                  {#each dbrdData.data as salesmanData}
-                    <Tabs.Content value={salesmanData.product} class="mt-2">
-                      {#if !salesmanData.data || salesmanData.data.length === 0}
-                        <div class="text-center italic text-gray-600">
-                          No data found
-                        </div>
-                      {:else}
-                        <Grid data={salesmanData.data} />
-                      {/if}
-                    </Tabs.Content>
-                  {/each}
-                </Tabs.Root>
-              {/if}
+              {@render salesmanSales(dbrdData)}
             </Tabs.Content>
             <Tabs.Content value="Collection" class="mt-2">
               {@render collections(dbrdData)}
@@ -558,4 +502,75 @@
       {/each}
     </div>
   {/if}
+{/snippet}
+
+{#snippet salesmanSales(source: DashboardData | undefined)}
+  {#if (source && source?.name === "SalesmanSale") || source?.name === "DealerSale"}
+    <div>
+      {#each locations as location}
+        {@const prodSales = dbrdData?.data.filter(
+          (d) =>
+            d.business === location.business && d.location === location.default
+        ) as SalesmanSale[]}
+        <div
+          class="mb-4 w-full rounded-lg border border-gray-300 bg-slate-600 p-2"
+        >
+          <div
+            class="flex justify-between rounded border-b border-gray-500 p-1 font-bold uppercase tracking-wide text-gray-900"
+          >
+            <div class="text-lg font-bold text-slate-900 text-white">
+              {location.business}
+            </div>
+            <div class="flex gap-2">
+              {#each location.locations as loc}
+                <Toggle
+                  variant="outline"
+                  class="text-white"
+                  pressed={location.selections.includes(loc)}
+                  onPressedChange={(pressed) => {
+                    if (pressed) {
+                      location.selections.push(loc);
+                    } else {
+                      location.selections = location.selections.filter(
+                        (s) => s !== loc
+                      );
+                    }
+                  }}
+                >
+                  {loc}
+                </Toggle>
+              {/each}
+            </div>
+          </div>
+          {@render salesmanSalesCard(prodSales)}
+        </div>
+      {/each}
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet salesmanSalesCard(data: SalesmanSale[])}
+  <div class="bg-gray-50 m-1 rounded">
+    <Tabs.Root
+      value={data && data.length > 0 ? data[0].product : ""}
+      class="w-full"
+    >
+      <Tabs.List class="bg-gray-300">
+        {#each data as salesmanData}
+          <Tabs.Trigger value={salesmanData.product}
+            >{salesmanData.product}</Tabs.Trigger
+          >
+        {/each}
+      </Tabs.List>
+      {#each data as salesmanData}
+        <Tabs.Content value={salesmanData.product} class="mt-2">
+          {#if !salesmanData.data || salesmanData.data.length === 0}
+            <div class="text-center italic text-gray-600">No data found</div>
+          {:else}
+            <Grid data={salesmanData.data} />
+          {/if}
+        </Tabs.Content>
+      {/each}
+    </Tabs.Root>
+  </div>
 {/snippet}

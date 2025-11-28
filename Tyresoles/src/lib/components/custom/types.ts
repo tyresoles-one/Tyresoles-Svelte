@@ -93,6 +93,8 @@ export interface DialogPageProps {
   footer?: boolean;
   overlay?: boolean;
   autoFocus?: boolean;
+  actions?: Array<ButtonProps>;
+  class?: string;
   children?: Snippet;
   onOpenChange?: (open: boolean) => void;
   onAction?: () => void;

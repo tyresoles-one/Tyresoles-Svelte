@@ -92,6 +92,8 @@
       toast.error("Please select at least one Location");
       return;
     }
+
+    dbrdData = [];
     apiFetch(endpoints.sales.salesDashboard, {
       method: "POST",
       body: { ...fetchParams, reportName: activeView } as FetchParams,

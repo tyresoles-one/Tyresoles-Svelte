@@ -3,7 +3,8 @@
   import type { DialogPageProps } from "../types";
   import { Icon } from "$lib/components/custom/icon";
   import { Button } from "$lib/components/custom/button";
-  import { Portal } from "bits-ui";
+  import Progressbar from "../progress-bar/progressbar.svelte";
+  import { cn } from "$lib/utils";
 
   let {
     open,
@@ -15,6 +16,7 @@
     footer = true,
     overlay = true,
     autoFocus = true,
+    actions,
     onOpenChange,
     onAction,
     onClose,
@@ -24,6 +26,7 @@
     onFocusOutside,
     interactOutsideBehavior,
     escapeKeydownBehavior,
+    class: className,
   }: DialogPageProps = $props();
 </script>
 
@@ -32,6 +35,7 @@
     <Dialog.Overlay />
   {/if}
   <Dialog.Content
+    class={cn(className, "p-2")}
     {interactOutsideBehavior}
     {escapeKeydownBehavior}
     {onEscapeKeydown}
@@ -42,15 +46,20 @@
         e.preventDefault();
       }
     }}
-    class="p-2"
   >
     <Dialog.Header>
-      <div class="flex items-center gap-1">
-        {#if icon}
-          <Icon name={icon} class="h-5 w-5" />
-        {/if}
-        {#if title}
-          <Dialog.Title>{title}</Dialog.Title>
+      <div class="flex flex-col items-center gap-1">
+        <div class="flex gap-2">
+          {#if icon}
+            <Icon name={icon} class="h-5 w-5" />
+          {/if}
+          {#if title}
+            <Dialog.Title>{title}</Dialog.Title>
+          {/if}
+        </div>
+
+        {#if loading}
+          <Progressbar />
         {/if}
       </div>
 
@@ -61,7 +70,14 @@
     {@render children?.()}
     {#if footer}
       <Dialog.Footer>
-        <Button {loading} onclick={onAction}>{actionLabel}</Button>
+        {#if actions}
+          {#each actions as action}
+            <Button {...action} />
+          {/each}
+        {/if}
+        {#if actionLabel && onAction}
+          <Button {loading} onclick={onAction}>{actionLabel}</Button>
+        {/if}
       </Dialog.Footer>
     {/if}
   </Dialog.Content>

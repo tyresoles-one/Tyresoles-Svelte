@@ -149,7 +149,19 @@
     }
   });
 
-  $effect.pre(() => {
+  // $effect.pre(() => {
+  //   if (!columns) {
+  //     columns = extractColumns(data);
+  //     visibleColumns = new Set(columns);
+  //   }
+  //   currentData = filter(
+  //     data,
+  //     getVisibleColumnNames(visibleColumns),
+  //     searchTerm ?? ""
+  //   );
+  // });
+
+  $effect(() => {
     if (!columns) {
       columns = extractColumns(data);
       visibleColumns = new Set(columns);
@@ -244,6 +256,8 @@
       toast.error("No data to copy");
     }
   };
+
+  $inspect(visibleColumns, "visibleColumns");
 </script>
 
 {#if loading}
